@@ -1,0 +1,143 @@
+---
+  - include_vars: "{{ playbook_dir }}/config.yml"      
+  - include_vars: "main.yml"
+
+  - name: Disable IPV6        
+    shell: |       
+      echo "net.bridge.bridge-nf-call-ip6tables = 1" >> /etc/sysctl.conf
+      echo "net.bridge.bridge-nf-call-iptables = 1"  >> /etc/sysctl.conf      
+      sysctl --system
+  
+  - name: Install packages    
+    apt:        
+      name: "{{ packages }}"
+      state: latest 
+    vars:
+      packages:
+        - wget 
+        - procps
+        - openssl
+        - openvpn
+
+  - name: Enable and start openvpn
+    systemd:
+      name: openvpn
+      state: stopped
+      enabled: no     
+      
+  - name: Delete logfile
+    file:
+      path: /var/log/openvpn.log
+      state: absent      
+
+  - name: Delete directory
+    file:
+      path: /etc/openvpn
+      state: absent
+      
+  - name: Create directory
+    file:
+      path: /etc/openvpn
+      state: directory
+      mode: '700'
+
+  - name: Create directory
+    file:
+      path: /etc/openvpn/certs
+      state: directory
+      mode: '700'
+
+  - name: Create directory
+    file:
+      path: /etc/openvpn/ccd
+      state: directory
+      mode: '700'
+  
+  - name: Copy certificate
+    copy:
+      src: "{{ playbook_dir }}/certs/openvpn.crt"
+      dest: /etc/openvpn/certs/server.openvpn.crt
+      mode: '700'
+  
+  - name: Copy key
+    copy:
+      src: "{{ playbook_dir }}/certs/openvpn.key"
+      dest: /etc/openvpn/certs/server.openvpn.key
+      mode: '700'
+
+  - name: Copy root ca
+    copy:
+      src: "{{ playbook_dir }}/certs/rootCA.pem"
+      dest: /etc/openvpn/certs/ca.crt
+      mode: '700'
+
+  - name: Copy ta
+    copy:
+      src: "{{ playbook_dir }}/certs/ta.key"
+      dest: /etc/openvpn/certs/ta.key
+      mode: '700'    
+
+  - name: Copy dh
+    copy:
+      src: "{{ playbook_dir }}/certs/dh4096.pem"
+      dest: /etc/openvpn/certs/dh4096.pem
+      mode: '700'    
+      
+  - name: Openvpn config file
+    template:
+      src: openvpn.conf.j2
+      dest: /etc/openvpn/server.conf
+      owner: root
+      group: root
+      mode: '700'
+
+  - name: Openvpn allowed_list script
+    template:
+      src: verifycn.py.j2
+      dest: /etc/openvpn/verify-cn
+      owner: root
+      group: root
+      mode: '755'
+
+  - name: Openvpn allowed_list file
+    template:
+      src: allowed_list.j2
+      dest: /etc/openvpn/allowed_list
+      owner: root
+      group: root
+      mode: '700'
+
+  - name: Create custom configuration
+    template:
+      src: custom.j2
+      dest: /etc/openvpn/ccd/{{ item.cn }}
+    vars:
+      u: "{{ item.commands }}"
+    with_items:
+      "{{ allowed_users }}"
+
+
+  - name: Enable and start openvpn
+    systemd:
+      name: openvpn
+      state: restarted
+      daemon_reload: yes
+      enabled: no
+
+  - name: Create postscript
+    template:
+      src: post_script.sh.j2
+      dest: /root/post_script.sh
+      mode: '744'
+      owner: root
+      group: root
+  
+  - name: Execute postscript
+    shell: |
+      bash /root/post_script.sh
+    args:
+      executable: /bin/bash
+
+
+       
+

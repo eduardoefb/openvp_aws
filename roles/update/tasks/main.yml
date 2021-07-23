@@ -1,0 +1,24 @@
+---
+  - include_vars: "{{ playbook_dir }}/config.yml"      
+  - include_vars: "main.yml"
+
+  - name: Update system
+    apt:
+      name: '*'
+      state: 'latest'
+      update_cache: yes
+    retries: 300
+    delay: 10
+
+  - name: Change hostname
+    template:
+      src: hostname.j2
+      dest: /etc/hostname 
+      owner: root
+      group: root
+      mode: '644'
+
+  - name: Reboot after update  
+    reboot:
+      msg: Reboot triggered
+      reboot_timeout: 360

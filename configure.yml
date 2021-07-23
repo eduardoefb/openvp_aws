@@ -1,0 +1,6 @@
+# Update nodes:
+- hosts: openvpn
+  user: ubuntu
+  become: true
+  roles:     
+    - role: configure

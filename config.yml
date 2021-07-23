@@ -1,0 +1,38 @@
+---
+  # Openvpn Server configuration:
+  server:
+    network: "10.0.0.0 255.255.255.0"
+    proto: tcp
+    dev: tap
+    port: 8000
+    log: "/var/log/openvpn.log"
+
+    commands:
+      - "ip route add 172.10.0.0/24 via 10.0.0.20"
+      - "ip route add 172.10.1.0/24 via 10.0.0.21"
+  
+  # Don't change this first two cns
+  allowed_users:
+    - cn: rootca.cloud.int
+      commands: []
+        
+    - cn: openvpn.cloud.int
+      commands: []
+
+    # CNs for clients
+    # !!!!Warning: Use this configuration (fixed IP only for linux hosts)!!!!!!
+    - cn: client01.cloud.int
+      commands:
+        - "ifconfig-push 10.0.0.20 255.255.255.0" 
+        -  push "route 172.10.1.0 255.255.255.0"
+
+    - cn: client02.cloud.int
+      commands:            
+        - push "route 10.226.0.0 255.255.0.0"
+        - push "route 10.50.0.0 255.255.255.0"
+        - push "route 10.51.0.0 255.255.255.0"
+        - push "route 10.52.0.0 255.255.255.0"
+        - push "route 10.2.1.31 255.255.255.255"
+
+
+
