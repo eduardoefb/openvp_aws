@@ -15,7 +15,7 @@ data "aws_ami" "latest_images" {
 
 resource "aws_instance" "ec2instance"{   
    ami = data.aws_ami.latest_images.id
-   instance_type = "t3.nano"
+   instance_type = "t2.micro"
    key_name = aws_key_pair.my-key.key_name
    security_groups = [ aws_security_group.allow_ssh.name ]
 
